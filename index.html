@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Canadian Employment Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f4f6f9;
+  --white:#ffffff;
+  --border:#e2e8f0;
+  --text:#1a202c;
+  --muted:#718096;
+  --accent:#2b6cb0;
+  --accent-light:#ebf4ff;
+  --green:#276749;
+  --green-light:#f0fff4;
+  --red:#c53030;
+  --red-light:#fff5f5;
+  --amber:#744210;
+  --amber-light:#fffbeb;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 6px rgba(0,0,0,0.07),0 2px 4px rgba(0,0,0,0.04);
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;}
+
+/* TOPBAR */
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-icon{width:32px;height:32px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);}
+.topbar-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.badge{font-size:10px;font-weight:500;padding:3px 10px;border-radius:99px;background:var(--accent-light);color:var(--accent);}
+
+/* CONTROLS BAR */
+.controls{background:var(--white);border-bottom:1px solid var(--border);padding:12px 32px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+.ctrl-group{display:flex;align-items:center;gap:10px;}
+.ctrl-label{font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;}
+select{background:var(--white);border:1px solid var(--border);color:var(--text);padding:6px 28px 6px 10px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;outline:none;border-radius:6px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;box-shadow:var(--shadow);}
+select:focus{border-color:var(--accent);}
+.ctrl-divider{width:1px;height:24px;background:var(--border);}
+.updated{font-size:11px;color:var(--muted);margin-left:auto;}
+
+/* MAIN */
+.main{padding:24px 32px;max-width:1400px;margin:0 auto;}
+
+/* KPI CARDS */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 20px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi.blue::before{background:var(--accent);}
+.kpi.green::before{background:#38a169;}
+.kpi.amber::before{background:#d69e2e;}
+.kpi.slate::before{background:#4a5568;}
+.kpi-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.kpi-value{font-size:28px;font-weight:700;color:var(--text);line-height:1;}
+.kpi-value.blue{color:var(--accent);}
+.kpi-value.green{color:#276749;}
+.kpi-value.amber{color:#744210;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+.kpi-change{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;margin-top:8px;}
+.kpi-change.up{background:var(--green-light);color:var(--green);}
+.kpi-change.neutral{background:var(--accent-light);color:var(--accent);}
+
+/* CHART GRID */
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;box-shadow:var(--shadow);}
+.chart-card.full{grid-column:span 2;}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--text);}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:16px;}
+.chart-wrap{position:relative;height:260px;}
+
+/* BOTTOM */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.insight-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;box-shadow:var(--shadow);}
+.insight-card h3{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text);display:flex;align-items:center;gap:8px;}
+.insight-card h3::before{content:'';width:3px;height:16px;background:var(--accent);border-radius:2px;flex-shrink:0;}
+.insight-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.7;}
+.insight-item:last-child{border-bottom:none;}
+.insight-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px;}
+
+/* DATA TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{text-align:left;padding:8px 12px;background:var(--bg);color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--bg);}
+.bar-cell{display:flex;align-items:center;gap:8px;}
+.bar-bg{flex:1;height:6px;background:var(--border);border-radius:3px;max-width:100px;}
+.bar-fill{height:100%;background:var(--accent);border-radius:3px;}
+
+footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);background:var(--white);margin-top:24px;}
+footer a{color:var(--accent);}
+
+@media(max-width:900px){
+  .charts-grid,.bottom-grid{grid-template-columns:1fr;}
+  .chart-card.full{grid-column:span 1;}
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .main{padding:16px;}
+  .topbar,.controls{padding-left:16px;padding-right:16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-icon">CA</div>
+    <div>
+      <div class="topbar-title">Canadian Employment Dashboard</div>
+      <div class="topbar-sub">Provincial Labour Statistics &middot; Statistics Canada</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="badge">1976 &ndash; 2019</span>
+    <span class="badge">10 Provinces</span>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Province</span>
+    <select id="provinceSelect" onchange="updateDashboard()">
+      <option value="Ontario">Ontario</option>
+      <option value="Quebec">Quebec</option>
+      <option value="British Columbia">British Columbia</option>
+      <option value="Alberta">Alberta</option>
+      <option value="Manitoba">Manitoba</option>
+      <option value="Saskatchewan">Saskatchewan</option>
+      <option value="Nova Scotia">Nova Scotia</option>
+      <option value="New Brunswick">New Brunswick</option>
+      <option value="Newfoundland and Labrador">Newfoundland and Labrador</option>
+      <option value="Prince Edward Island">Prince Edward Island</option>
+    </select>
+  </div>
+  <div class="ctrl-divider"></div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Start Year</span>
+    <select id="startYear" onchange="updateDashboard()">
+      <option value="1976">1976</option>
+      <option value="1986">1986</option>
+      <option value="1996">1996</option>
+      <option value="2006">2006</option>
+      <option value="2010">2010</option>
+    </select>
+  </div>
+  <span class="updated">Data: Statistics Canada &middot; Last updated 2019</span>
+</div>
+
+<div class="main">
+
+  <div class="kpi-row">
+    <div class="kpi blue">
+      <div class="kpi-label">2019 Employment</div>
+      <div class="kpi-value blue" id="kpi1">--</div>
+      <div class="kpi-sub">thousands of workers</div>
+      <div class="kpi-change neutral" id="kpiShare">-- of Canada</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Growth since 1976</div>
+      <div class="kpi-value green" id="kpi2">--</div>
+      <div class="kpi-sub">vs 1976 baseline</div>
+      <div class="kpi-change up">Long-term trend</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Male Employment 2019</div>
+      <div class="kpi-value" id="kpi3">--</div>
+      <div class="kpi-sub">thousands</div>
+    </div>
+    <div class="kpi slate">
+      <div class="kpi-label">Female Employment 2019</div>
+      <div class="kpi-value" id="kpi4">--</div>
+      <div class="kpi-sub">thousands</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title" id="trendTitle">Employment Trend</div>
+          <div class="chart-sub">Total employment over selected period (thousands)</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Gender Split 2019</div>
+      <div class="chart-sub">Male vs Female employment in selected province</div>
+      <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">All Provinces Comparison &mdash; 2019</div>
+      <div class="chart-sub">Total employment by province in thousands. Selected province highlighted.</div>
+      <div class="chart-wrap"><canvas id="provincesChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="chart-card">
+      <div class="chart-title">Full-time vs Part-time &mdash; Ontario</div>
+      <div class="chart-sub">How the employment mix shifted over time (thousands)</div>
+      <div class="chart-wrap"><canvas id="ftptChart"></canvas></div>
+    </div>
+    <div class="insight-card">
+      <h3>Key Insights</h3>
+      <div class="insight-item"><div class="insight-dot"></div>Ontario and Quebec consistently account for over 55% of total Canadian employment throughout the dataset.</div>
+      <div class="insight-item"><div class="insight-dot"></div>Alberta saw the sharpest growth rate, more than doubling employment between 1976 and 2019, driven largely by the energy sector.</div>
+      <div class="insight-item"><div class="insight-dot"></div>The gender gap has narrowed significantly. Female employment grew faster than male employment in almost every province since 1976.</div>
+      <div class="insight-item"><div class="insight-dot"></div>Full-time employment in Ontario dropped sharply in 1982 and 1991, clearly showing the impact of recessions on the labour market.</div>
+      <div class="insight-item"><div class="insight-dot"></div>Prince Edward Island is the smallest workforce but showed consistent steady growth with no major dips unlike larger provinces.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Data source: Statistics Canada via <a href="https://www.kaggle.com/datasets/dkom/employment-rate-in-canada" target="_blank">Kaggle</a> &nbsp;&middot;&nbsp;
+  Analysis and dashboard by <a href="https://silvyurmi96.github.io" target="_blank">Silvy Rahman Urmi</a> &nbsp;&middot;&nbsp;
+  <a href="https://github.com/silvyurmi96" target="_blank">View on GitHub</a>
+</footer>
+
+<script>
+const DATA = {"provinces": ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"], "years": ["1976", "1977", "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"], "ts_data": {"Alberta": {"1976": 855.8, "1977": 904.4, "1978": 960.2, "1979": 1032.9, "1980": 1102.0, "1981": 1183.2, "1982": 1165.6, "1983": 1134.4, "1984": 1137.1, "1985": 1173.0, "1986": 1184.0, "1987": 1188.0, "1988": 1222.8, "1989": 1251.0, "1990": 1275.6, "1991": 1283.5, "1992": 1280.2, "1993": 1289.6, "1994": 1325.2, "1995": 1365.6, "1996": 1404.8, "1997": 1452.8, "1998": 1509.3, "1999": 1544.4, "2000": 1584.1, "2001": 1627.9, "2002": 1672.8, "2003": 1727.8, "2004": 1776.1, "2005": 1821.4, "2006": 1913.3, "2007": 1991.4, "2008": 2052.7, "2009": 2029.8, "2010": 2024.6, "2011": 2100.2, "2012": 2172.9, "2013": 2225.1, "2014": 2273.4, "2015": 2301.7, "2016": 2265.0, "2017": 2288.5, "2018": 2331.2, "2019": 2343.0}, "British Columbia": {"1976": 1061.4, "1977": 1089.7, "1978": 1138.2, "1979": 1188.5, "1980": 1265.9, "1981": 1320.0, "1982": 1254.1, "1983": 1245.3, "1984": 1244.9, "1985": 1279.4, "1986": 1331.4, "1987": 1377.8, "1988": 1434.9, "1989": 1507.8, "1990": 1558.7, "1991": 1576.9, "1992": 1617.2, "1993": 1668.2, "1994": 1743.8, "1995": 1785.8, "1996": 1813.1, "1997": 1859.5, "1998": 1858.2, "1999": 1894.4, "2000": 1931.5, "2001": 1920.8, "2002": 1950.9, "2003": 1997.5, "2004": 2029.8, "2005": 2089.3, "2006": 2141.1, "2007": 2206.1, "2008": 2241.5, "2009": 2193.7, "2010": 2224.6, "2011": 2227.5, "2012": 2262.2, "2013": 2264.4, "2014": 2278.0, "2015": 2307.9, "2016": 2379.2, "2017": 2466.5, "2018": 2493.6, "2019": 2560.5}, "Manitoba": {"1976": 434.5, "1977": 438.1, "1978": 444.4, "1979": 454.8, "1980": 462.2, "1981": 468.8, "1982": 460.6, "1983": 467.9, "1984": 479.4, "1985": 486.8, "1986": 500.8, "1987": 505.3, "1988": 506.2, "1989": 512.9, "1990": 513.9, "1991": 506.8, "1992": 499.9, "1993": 503.8, "1994": 507.7, "1995": 516.3, "1996": 517.7, "1997": 525.0, "1998": 534.8, "1999": 541.8, "2000": 552.2, "2001": 549.7, "2002": 563.5, "2003": 566.8, "2004": 572.7, "2005": 576.2, "2006": 582.9, "2007": 592.2, "2008": 601.8, "2009": 600.7, "2010": 609.0, "2011": 611.5, "2012": 621.5, "2013": 626.0, "2014": 626.7, "2015": 636.3, "2016": 633.4, "2017": 643.8, "2018": 647.7, "2019": 653.5}, "New Brunswick": {"1976": 231.2, "1977": 228.1, "1978": 239.2, "1979": 250.2, "1980": 254.0, "1981": 257.8, "1982": 248.6, "1983": 251.1, "1984": 255.4, "1985": 262.0, "1986": 271.0, "1987": 280.3, "1988": 290.9, "1989": 297.1, "1990": 300.3, "1991": 295.3, "1992": 296.8, "1993": 299.9, "1994": 298.4, "1995": 307.3, "1996": 305.8, "1997": 310.0, "1998": 316.2, "1999": 325.9, "2000": 331.7, "2001": 330.4, "2002": 341.7, "2003": 341.5, "2004": 348.4, "2005": 346.8, "2006": 350.8, "2007": 358.0, "2008": 360.4, "2009": 360.2, "2010": 358.2, "2011": 355.7, "2012": 353.7, "2013": 354.3, "2014": 353.6, "2015": 352.0, "2016": 351.5, "2017": 353.0, "2018": 354.0, "2019": 356.6}, "Newfoundland and Labrador": {"1976": 159.2, "1977": 160.9, "1978": 166.2, "1979": 176.8, "1980": 182.3, "1981": 186.1, "1982": 181.2, "1983": 180.8, "1984": 179.1, "1985": 182.7, "1986": 186.8, "1987": 189.7, "1988": 199.5, "1989": 206.7, "1990": 207.0, "1991": 204.9, "1992": 194.8, "1993": 193.9, "1994": 193.6, "1995": 194.7, "1996": 189.0, "1997": 189.2, "1998": 193.4, "1999": 201.8, "2000": 199.0, "2001": 203.7, "2002": 206.8, "2003": 210.4, "2004": 213.1, "2005": 212.4, "2006": 214.3, "2007": 216.9, "2008": 220.9, "2009": 215.0, "2010": 222.7, "2011": 232.0, "2012": 240.5, "2013": 243.0, "2014": 238.4, "2015": 236.0, "2016": 232.6, "2017": 224.1, "2018": 224.9, "2019": 227.5}, "Nova Scotia": {"1976": 298.0, "1977": 298.1, "1978": 305.9, "1979": 317.3, "1980": 324.3, "1981": 328.5, "1982": 321.1, "1983": 324.6, "1984": 339.8, "1985": 343.7, "1986": 350.6, "1987": 358.9, "1988": 373.5, "1989": 381.8, "1990": 385.4, "1991": 380.8, "1992": 369.0, "1993": 366.6, "1994": 372.4, "1995": 375.9, "1996": 377.1, "1997": 382.3, "1998": 396.0, "1999": 403.6, "2000": 411.6, "2001": 415.4, "2002": 422.6, "2003": 431.4, "2004": 441.7, "2005": 441.9, "2006": 441.4, "2007": 447.4, "2008": 451.6, "2009": 449.4, "2010": 451.2, "2011": 452.8, "2012": 457.3, "2013": 452.7, "2014": 447.6, "2015": 448.0, "2016": 446.1, "2017": 449.1, "2018": 455.7, "2019": 466.1}, "Ontario": {"1976": 3741.4, "1977": 3804.2, "1978": 3924.4, "1979": 4094.2, "1980": 4164.0, "1981": 4292.0, "1982": 4200.6, "1983": 4249.2, "1984": 4411.5, "1985": 4576.7, "1986": 4732.5, "1987": 4895.8, "1988": 5083.2, "1989": 5198.1, "1990": 5194.2, "1991": 5016.6, "1992": 4932.7, "1993": 4939.3, "1994": 5013.1, "1995": 5099.8, "1996": 5165.5, "1997": 5289.9, "1998": 5454.4, "1999": 5636.6, "2000": 5816.4, "2001": 5921.9, "2002": 6033.0, "2003": 6212.2, "2004": 6315.3, "2005": 6381.1, "2006": 6452.1, "2007": 6545.8, "2008": 6609.2, "2009": 6434.9, "2010": 6538.1, "2011": 6658.1, "2012": 6703.8, "2013": 6822.5, "2014": 6877.3, "2015": 6924.3, "2016": 6999.4, "2017": 7127.1, "2018": 7239.8, "2019": 7437.8}, "Prince Edward Island": {"1976": 43.0, "1977": 43.6, "1978": 44.8, "1979": 46.5, "1980": 47.7, "1981": 47.1, "1982": 46.6, "1983": 48.7, "1984": 49.5, "1985": 50.7, "1986": 52.2, "1987": 53.4, "1988": 54.5, "1989": 55.1, "1990": 55.1, "1991": 53.5, "1992": 53.6, "1993": 54.6, "1994": 55.7, "1995": 57.1, "1996": 58.9, "1997": 58.6, "1998": 59.5, "1999": 60.3, "2000": 62.8, "2001": 63.7, "2002": 64.7, "2003": 66.0, "2004": 66.6, "2005": 67.7, "2006": 68.0, "2007": 68.4, "2008": 68.9, "2009": 68.1, "2010": 69.8, "2011": 71.9, "2012": 73.0, "2013": 74.2, "2014": 73.9, "2015": 73.2, "2016": 71.6, "2017": 73.7, "2018": 75.9, "2019": 77.6}, "Quebec": {"1976": 2545.2, "1977": 2558.0, "1978": 2598.4, "1979": 2692.0, "1980": 2754.1, "1981": 2789.8, "1982": 2642.5, "1983": 2685.2, "1984": 2762.2, "1985": 2848.1, "1986": 2931.4, "1987": 3020.7, "1988": 3083.0, "1989": 3128.5, "1990": 3139.0, "1991": 3083.6, "1992": 3037.4, "1993": 3033.1, "1994": 3096.8, "1995": 3136.5, "1996": 3132.2, "1997": 3172.9, "1998": 3256.7, "1999": 3328.8, "2000": 3403.4, "2001": 3445.4, "2002": 3562.3, "2003": 3625.4, "2004": 3678.1, "2005": 3707.9, "2006": 3746.4, "2007": 3842.9, "2008": 3879.5, "2009": 3854.1, "2010": 3940.1, "2011": 3978.2, "2012": 4010.1, "2013": 4059.2, "2014": 4057.1, "2015": 4097.3, "2016": 4135.6, "2017": 4225.4, "2018": 4263.9, "2019": 4336.3}, "Saskatchewan": {"1976": 382.2, "1977": 395.4, "1978": 403.2, "1979": 416.4, "1980": 423.3, "1981": 431.0, "1982": 430.3, "1983": 436.9, "1984": 443.3, "1985": 453.7, "1986": 463.3, "1987": 462.0, "1988": 462.9, "1989": 456.3, "1990": 454.2, "1991": 453.4, "1992": 448.1, "1993": 448.4, "1994": 454.4, "1995": 457.9, "1996": 454.6, "1997": 464.5, "1998": 469.0, "1999": 469.7, "2000": 472.9, "2001": 459.3, "2002": 467.5, "2003": 475.8, "2004": 480.0, "2005": 481.9, "2006": 491.3, "2007": 505.6, "2008": 517.4, "2009": 525.9, "2010": 531.2, "2011": 536.0, "2012": 549.2, "2013": 564.9, "2014": 570.5, "2015": 573.7, "2016": 568.8, "2017": 568.1, "2018": 570.8, "2019": 580.1}}, "snap2019": {"Alberta": 2343.0, "British Columbia": 2560.5, "Manitoba": 653.5, "New Brunswick": 356.6, "Newfoundland and Labrador": 227.5, "Nova Scotia": 466.1, "Ontario": 7437.8, "Prince Edward Island": 77.6, "Quebec": 4336.3, "Saskatchewan": 580.1}, "males2019": {"Alberta": 1262.1, "British Columbia": 1331.0, "Manitoba": 347.8, "New Brunswick": 181.0, "Newfoundland and Labrador": 116.9, "Nova Scotia": 234.1, "Ontario": 3888.3, "Prince Edward Island": 39.4, "Quebec": 2261.7, "Saskatchewan": 314.3}, "females2019": {"Alberta": 1080.9, "British Columbia": 1229.5, "Manitoba": 305.7, "New Brunswick": 175.6, "Newfoundland and Labrador": 110.6, "Nova Scotia": 232.0, "Ontario": 3549.5, "Prince Edward Island": 38.2, "Quebec": 2074.6, "Saskatchewan": 265.8}, "ft_data": {"1976": 3236.8, "1977": 3271.1, "1978": 3377.9, "1979": 3495.1, "1980": 3540.0, "1981": 3626.7, "1982": 3510.2, "1983": 3525.3, "1984": 3670.8, "1985": 3807.6, "1986": 3951.7, "1987": 4098.7, "1988": 4238.8, "1989": 4339.0, "1990": 4311.3, "1991": 4105.5, "1992": 4019.1, "1993": 3974.9, "1994": 4060.2, "1995": 4144.2, "1996": 4173.8, "1997": 4276.6, "1998": 4438.0, "1999": 4622.4, "2000": 4769.4, "2001": 4863.5, "2002": 4934.6, "2003": 5060.9, "2004": 5164.8, "2005": 5219.0, "2006": 5294.8, "2007": 5349.9, "2008": 5366.7, "2009": 5174.9, "2010": 5254.5, "2011": 5371.6, "2012": 5411.1, "2013": 5491.7, "2014": 5539.3, "2015": 5617.9, "2016": 5671.4, "2017": 5777.7, "2018": 5907.7, "2019": 6057.2}, "pt_data": {"1976": 504.6, "1977": 533.1, "1978": 546.5, "1979": 599.2, "1980": 624.0, "1981": 665.3, "1982": 690.4, "1983": 723.9, "1984": 740.7, "1985": 769.1, "1986": 780.8, "1987": 797.1, "1988": 844.4, "1989": 859.1, "1990": 883.0, "1991": 911.1, "1992": 913.6, "1993": 964.4, "1994": 953.0, "1995": 955.5, "1996": 991.8, "1997": 1013.3, "1998": 1016.4, "1999": 1014.2, "2000": 1047.0, "2001": 1058.4, "2002": 1098.3, "2003": 1151.3, "2004": 1150.5, "2005": 1162.2, "2006": 1157.3, "2007": 1196.0, "2008": 1242.5, "2009": 1260.0, "2010": 1283.7, "2011": 1286.5, "2012": 1292.7, "2013": 1330.8, "2014": 1338.0, "2015": 1306.4, "2016": 1328.0, "2017": 1349.4, "2018": 1332.2, "2019": 1380.6}};
+
+let trendChart, genderChart, provincesChart, ftptChart;
+
+function getProvince(){ return document.getElementById('provinceSelect').value; }
+function getStartYear(){ return parseInt(document.getElementById('startYear').value); }
+function filteredYears(s){ return DATA.years.filter(y => parseInt(y) >= s); }
+
+const totalCanada2019 = Object.values(DATA.snap2019).reduce((a,b)=>a+b,0);
+
+function initCharts(){
+  Chart.defaults.font.family = 'Inter';
+  Chart.defaults.color = '#718096';
+
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+        y: { ticks: { font: { size: 11 } }, grid: { color: '#f1f5f9' } }
+      }
+    }
+  });
+
+  genderChart = new Chart(document.getElementById('genderChart'), {
+    type: 'doughnut',
+    data: { labels: ['Male', 'Female'], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 16 } } }
+    }
+  });
+
+  provincesChart = new Chart(document.getElementById('provincesChart'), {
+    type: 'bar',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 } }, grid: { color: '#f1f5f9' } }
+      }
+    }
+  });
+
+  ftptChart = new Chart(document.getElementById('ftptChart'), {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 16 } }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+        y: { ticks: { font: { size: 11 } }, grid: { color: '#f1f5f9' } }
+      }
+    }
+  });
+}
+
+function updateDashboard(){
+  const province = getProvince();
+  const startYear = getStartYear();
+  const years = filteredYears(startYear);
+
+  const val2019 = DATA.snap2019[province];
+  const val1976 = DATA.ts_data[province]['1976'];
+  const growth = Math.round(((val2019 - val1976) / val1976) * 100);
+  const males = DATA.males2019[province];
+  const females = DATA.females2019[province];
+  const share = Math.round((val2019 / totalCanada2019) * 100);
+
+  document.getElementById('kpi1').textContent = val2019.toLocaleString() + 'K';
+  document.getElementById('kpi2').textContent = '+' + growth + '%';
+  document.getElementById('kpi3').textContent = males.toLocaleString() + 'K';
+  document.getElementById('kpi4').textContent = females.toLocaleString() + 'K';
+  document.getElementById('kpiShare').textContent = share + '% of Canada';
+  document.getElementById('trendTitle').textContent = province + ' Employment Trend';
+
+  // Trend
+  const trendData = years.map(y => DATA.ts_data[province][y] || null);
+  trendChart.data.labels = years;
+  trendChart.data.datasets = [{
+    data: trendData,
+    borderColor: '#2b6cb0',
+    backgroundColor: 'rgba(43,108,176,0.08)',
+    borderWidth: 2, fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 5,
+    pointHoverBackgroundColor: '#2b6cb0'
+  }];
+  trendChart.update();
+
+  // Gender
+  genderChart.data.datasets = [{
+    data: [males, females],
+    backgroundColor: ['#2b6cb0', '#d69e2e'],
+    borderWidth: 0, hoverOffset: 4
+  }];
+  genderChart.update();
+
+  // Provinces
+  const shortNames = DATA.provinces.map(p => {
+    const map = {'British Columbia':'BC','Newfoundland and Labrador':'NL','Prince Edward Island':'PEI','New Brunswick':'NB','Nova Scotia':'NS','Saskatchewan':'SK','Manitoba':'MB','Alberta':'AB','Ontario':'ON','Quebec':'QC'};
+    return map[p] || p;
+  });
+  provincesChart.data.labels = shortNames;
+  provincesChart.data.datasets = [{
+    data: DATA.provinces.map(p => DATA.snap2019[p]),
+    backgroundColor: DATA.provinces.map(p => p === province ? '#2b6cb0' : '#bee3f8'),
+    borderWidth: 0, borderRadius: 4
+  }];
+  provincesChart.update();
+
+  // FT vs PT
+  const ftYears = years.filter(y => DATA.ft_data[y]);
+  ftptChart.data.labels = ftYears;
+  ftptChart.data.datasets = [
+    { label: 'Full-time', data: ftYears.map(y => DATA.ft_data[y]), borderColor: '#276749', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 0, pointHoverRadius: 4 },
+    { label: 'Part-time', data: ftYears.map(y => DATA.pt_data[y]), borderColor: '#d69e2e', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 0, pointHoverRadius: 4 }
+  ];
+  ftptChart.update();
+}
+
+initCharts();
+updateDashboard();
+</script>
+</body>
+</html>
